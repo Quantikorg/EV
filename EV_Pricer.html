@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Capital Structure Pricing & EV Sensitivity Model</title>
+  <style>
+    body { font-family: Arial; font-size:14px; margin:20px; }
+    .box { border:2px solid #333; padding:15px; margin-bottom:20px; }
+    .title { font-weight:bold; font-size:20px; background:black; color:white; padding:6px 10px; margin-bottom:15px; }
+
+    .row { display:grid; grid-template-columns:180px 200px 120px; align-items:center; margin-bottom:6px; }
+    .row-wide { display:grid; grid-template-columns:180px repeat(5,110px); gap:6px; margin-bottom:6px; align-items:center; }
+
+    input { width:100%; padding:3px 18px 3px 3px; box-sizing:border-box; background:#fff3b0; color:red; border:1px solid #aaa; text-align:right; }
+
+/* Date inputs */
+.row-wide input[id^="d"] {
+  width: 100%;
+  text-align: center;
+}
+
+.input-group { display:flex; align-items:center; gap:6px; }
+
+.input-group input { flex: 1 1 auto; }
+
+/* Fix for output fields inside input-group (Waterfall EV boxes) */
+.input-group .output {
+  flex: 0 0 70px;
+  width: 70px;
+}
+
+.input-group span { width: 18px; text-align: left; flex: 0 0 18px; }
+
+.percent { font-size:14px; }
+
+.cell { position:relative; width:100%; }
+.cell input { width:100%; }
+.cell::after { content:"m"; position:absolute; right:-16px; top:50%; transform:translateY(-50%); font-size:12px; }
+    .output { background:#eee; padding:3px 18px 3px 3px; width:100%; display:inline-block; text-align:right; box-sizing:border-box; }
+    .growth { font-style:italic; color:#bbb; width:100%; text-align:right; display:inline-block; }
+
+    table { border-collapse: collapse; font-size:12px; }
+    table td { border:1px solid #ddd; padding:3px 5px; text-align:right; }
+  </style>
+</head>
+<body>
+
+<div style="font-weight:bold; font-size:26px; margin-bottom:20px;">
+  Capital Structure Pricing & EV Sensitivity Model
+</div>
+
+<!-- WACC -->
+<div class="box">
+  <div class="title">WACC</div>
+  <div class="row"><div>Wd</div><div class="input-group"><input id="wd" value="30"><span class="percent">%</span></div></div>
+  <div class="row"><div>We</div><span id="we" class="output"></span></div>
+  <div class="row"><div>Kd</div><div class="input-group"><input id="kd" value="10"><span class="percent">%</span></div></div>
+  <div class="row"><div>Ke</div><div class="input-group"><input id="ke" value="13"><span class="percent">%</span></div></div>
+  <div class="row"><div><b>WACC</b></div><span id="wacc" class="output"></span></div>
+</div>
+
+<!-- TERMINAL VALUE -->
+<div class="box">
+  <div class="title">TERMINAL VALUE - EBITDA MULTIPLE</div>
+  <div class="row"><div>EBITDA - Terminal Date</div><div class="input-group"><input id="ebitdaTV" value="30"><span class="percent">m</span></div></div>
+  <div class="row"><div>Multiple</div><div class="input-group"><input id="multiple" value="5"><span class="percent">x</span></div></div>
+  <div class="row"><div><b>Terminal Value</b></div><span id="tv" class="output cell"></span></div>
+</div>
+
+<!-- DCF -->
+<div class="box">
+  <div class="title">DISCOUNTED CASH-FLOWS (M)</div>
+
+  <div class="row-wide">
+    <div></div>
+    <input id="d0" value="01/12/2025">
+    <input id="d1" value="31/12/2026">
+    <input id="d2" value="30/06/2027">
+    <input id="d3" value="30/06/2028">
+    <input id="d4" value="31/12/2028">
+  </div>
+
+  <div class="row-wide">
+    <div>Revenue</div><div></div>
+    <div class="cell"><input id="rev1" value="150"></div>
+    <div class="cell"><input id="rev2" value="200"></div>
+    <div class="cell"><input id="rev3" value="250"></div>
+    <div></div>
+  </div>
+
+  <div class="row-wide">
+    <div><i>Revenue Growth %</i></div>
+    <div></div>
+    <div></div>
+    <span id="g1" class="growth"></span>
+    <span id="g2" class="growth"></span>
+    <div></div>
+  </div>
+
+  <div class="row-wide">
+    <div>EBITDA</div><div></div>
+    <div class="cell"><input id="e1" value="10"></div>
+    <div class="cell"><input id="e2" value="30"></div>
+    <div class="cell"><input id="e3" value="35"></div>
+    <div></div>
+  </div>
+
+  <div class="row-wide">
+    <div><i>EBITDA Margin %</i></div><div></div>
+    <span id="m1" class="growth"></span>
+    <span id="m2" class="growth"></span>
+    <span id="m3" class="growth"></span>
+    <div></div>
+  </div>
+
+  <div class="row-wide">
+    <div>Free Cash-Flows</div><div></div>
+    <div class="cell"><input id="fcf1" value="5"></div>
+    <div class="cell"><input id="fcf2" value="10"></div>
+    <div class="cell"><input id="fcf3" value="15"></div>
+    <div></div>
+  </div>
+
+  <div class="row-wide">
+    <div>Terminal Value</div><div></div><div></div><div></div><div></div>
+    <span id="tv_dcf" class="output cell"></span>
+  </div>
+
+  <div class="row-wide">
+    <div class="secondary-label"><i>Year Fraction</i></div>
+    <div></div>
+    <span id="yf1" class="growth"></span>
+    <span id="yf2" class="growth"></span>
+    <span id="yf3" class="growth"></span>
+    <span id="yf4" class="growth"></span>
+  </div>
+
+  <div class="row-wide">
+    <div class="secondary-label"><i>Discount Factor</i></div>
+    <div></div>
+    <span id="df1" class="growth"></span>
+    <span id="df2" class="growth"></span>
+    <span id="df3" class="growth"></span>
+    <span id="df4" class="growth"></span>
+  </div>
+
+  <div class="row-wide">
+    <div class="secondary-label"><i>Present Value</i></div>
+    <div></div>
+    <span id="pv1" class="growth"></span>
+    <span id="pv2" class="growth"></span>
+    <span id="pv3" class="growth"></span>
+    <span id="pv4" class="growth"></span>
+  </div>
+
+  <div class="row"><div><b>Enterprise Value</b></div><span id="ev" class="output cell"></span></div>
+</div>
+
+<!-- WATERFALL -->
+<div class="box">
+  <div class="title">WATERFALL</div>
+  <div class="row"><div>Enterprise Value (EV)</div><div class="input-group"><span id="ev_wf" class="output"></span><span class="percent">m</span></div></div>
+  <div class="row"><div>Additional Adjustments</div><div class="input-group"><input id="cashAdj" value="0"><span class="percent">m</span></div></div>
+  <div class="row"><div><b>Adjusted EV</b></div><div class="input-group"><span id="adjEV" class="output"></span><span class="percent">m</span></div></div>
+
+  <div class="row"><div>Facility (Most Senior Top)</div><div>Amount</div><div>Price</div></div>
+  <div id="tranches"></div>
+
+  <div class="row"><button onclick="addTranche()">+ Add</button><button onclick="removeTranche()">- Remove</button></div>
+
+  <div class="row"><div><b>Total</b></div><span id="funding" class="output"></span></div>
+  <div class="row"><div>Weighted Average Price</div><span id="wap" class="output"></span></div>
+</div>
+
+<!-- SENSITIVITY -->
+<div class="box">
+  <div class="title">SENSITIVITY ANALYSIS</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><td></td><td colspan="15" style="text-align:center;">Exit Multiple</td></tr>
+        <tr>
+          <td>FCF Δ</td>
+          <td>1x</td><td>2x</td><td>3x</td><td>4x</td><td>5x</td><td>6x</td><td>7x</td><td>8x</td><td>9x</td><td>10x</td><td>11x</td><td>12x</td><td>13x</td><td>14x</td><td>15x</td>
+        </tr>
+      </thead>
+      <tbody id="sensTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function calc(){
+  // WACC
+  let wd = wdEl.value/100;
+  let we = 1-wd;
+  weEl.innerText=(we*100).toFixed(1)+"%";
+  let wacc = wd*(kdEl.value/100)+we*(keEl.value/100);
+  waccEl.innerText=(wacc*100).toFixed(1)+"%";
+
+  // Terminal
+  let tv = ebitdaTV.value * multiple.value;
+  tvEl.innerText = tv.toFixed(1);
+  document.getElementById("tv_dcf").innerText = tv.toFixed(1);
+
+  // Growth + margins
+  g1.innerText=((rev2.value/rev1.value-1)*100).toFixed(1)+"%";
+  g2.innerText=((rev3.value/rev2.value-1)*100).toFixed(1)+"%";
+
+  m1.innerText=((e1.value/rev1.value)*100).toFixed(1)+"%";
+  m2.innerText=((e2.value/rev2.value)*100).toFixed(1)+"%";
+  m3.innerText=((e3.value/rev3.value)*100).toFixed(1)+"%";
+
+  // EV + FULL DCF
+  function parseDate(s){ let [d,m,y]=s.split("/").map(Number); return new Date(y,m-1,d);} 
+  function yf(a,b){return (b-a)/(1000*60*60*24*365);} 
+
+  let d0=parseDate(d0El.value), d1=parseDate(d1El.value), d2=parseDate(d2El.value), d3=parseDate(d3El.value), d4=parseDate(d4El.value);
+
+  let yf1v=yf(d0,d1), yf2v=yf(d0,d2), yf3v=yf(d0,d3), yf4v=yf(d0,d4);
+
+  yf1.innerText=yf1v.toFixed(2); yf2.innerText=yf2v.toFixed(2); yf3.innerText=yf3v.toFixed(2); yf4.innerText=yf4v.toFixed(2);
+
+  let df1v=1/Math.pow(1+wacc,yf1v), df2v=1/Math.pow(1+wacc,yf2v), df3v=1/Math.pow(1+wacc,yf3v), df4v=1/Math.pow(1+wacc,yf4v);
+
+  df1.innerText=df1v.toFixed(2); df2.innerText=df2v.toFixed(2); df3.innerText=df3v.toFixed(2); df4.innerText=df4v.toFixed(2);
+
+  let pv1v=fcf1.value*df1v, pv2v=fcf2.value*df2v, pv3v=fcf3.value*df3v, pv4v=tv*df4v;
+
+  pv1.innerText=pv1v.toFixed(2); pv2.innerText=pv2v.toFixed(2); pv3.innerText=pv3v.toFixed(2); pv4.innerText=pv4v.toFixed(2);
+
+  let ev = pv1v+pv2v+pv3v+pv4v;
+  evEl.innerText=ev.toFixed(2);
+  ev_wf.innerText=ev.toFixed(2);
+
+  let adjEV = ev + (+cashAdj.value);
+  adjEVEl.innerText = adjEV.toFixed(2);
+
+  // WATERFALL
+  let rows = document.querySelectorAll(".tranche");
+  let amounts=[], total=0;
+
+  rows.forEach(r=>{
+    let v = +r.querySelector(".amt").value || 0;
+    amounts.push(v);
+    total += v;
+  });
+
+  funding.innerText = total.toFixed(1);
+
+  let remaining = adjEV;
+  let prices=[];
+
+  amounts.forEach(a=>{
+    if(a===0){ prices.push(0); return; }
+    let paid = Math.min(a, remaining);
+    remaining -= paid;
+    prices.push((paid/a)*100);
+  });
+
+  rows.forEach((r,i)=>{
+    r.querySelector(".price").innerText=(prices[i]||0).toFixed(1)+"%";
+  });
+
+  let wap=0;
+  amounts.forEach((a,i)=> wap += a*(prices[i]||0));
+  wap = total ? wap/total : 0;
+  wapEl.innerText = wap.toFixed(1)+"%";
+
+  // Sensitivity FULL
+  let multiples = Array.from({length:15},(_,i)=>i+1);
+  let changes = [-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4];
+
+  sensTable.innerHTML="";
+
+  changes.forEach(c=>{
+    let row = `<tr><td>${(c*100).toFixed(0)}%</td>`;
+
+    multiples.forEach(m=>{
+      let v = ev*(1+c)*(m/multiple.value);
+      let n = (v - ev)/(ev||1);
+
+      let t = Math.max(0,Math.min(1,(n+1)/2));
+
+      let r,g,b;
+      if(t<0.5){
+        let x=t/0.5;
+        r=230; g=Math.round(80+120*x); b=100;
+      } else {
+        let x=(t-0.5)/0.5;
+        r=Math.round(230-110*x); g=200; b=100;
+      }
+
+      let isBase = (c===0 && m==multiple.value);
+
+      if(isBase){
+        row += `<td style="background:black;color:white">${v.toFixed(1)}</td>`;
+      } else {
+        row += `<td style="background:rgb(${r},${g},${b})">${v.toFixed(1)}</td>`;
+      }
+    });
+
+    row += "</tr>";
+    sensTable.innerHTML += row;
+  });
+}
+
+function addTranche(){
+  let div=document.createElement("div");
+  div.className="row tranche";
+  div.innerHTML=`<input value="Facility"><input class="amt" value="0"><span class="output price"></span>`;
+  tranches.appendChild(div);
+  div.querySelector(".amt").addEventListener("input",calc);
+}
+
+function removeTranche(){
+  if(tranches.children.length) tranches.removeChild(tranches.lastChild);
+  calc();
+}
+
+const wdEl=wd, kdEl=kd, keEl=ke, weEl=we, waccEl=wacc;
+const d0El=d0, d1El=d1, d2El=d2, d3El=d3, d4El=d4;
+const ebitdaTVEl=ebitdaTV, multipleEl=multiple, tvEl=tv;
+const evEl=ev, adjEVEl=adjEV, wapEl=wap;
+
+for(let i=0;i<3;i++) addTranche();
+document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
+calc();
+  </script>
+  <footer style="margin:40px auto 20px;max-width:920px;text-align:center;font-size:12px;color:#777;font-style:italic;">
+    © Quantik.org. All rights reserved. This model, including its code and associated intellectual property, is the exclusive property of Quantik.org and may not be copied, distributed, or replicated without prior written consent. Use of this calculator implies acceptance of these terms.
+  </footer>
+</body>
+</html>
