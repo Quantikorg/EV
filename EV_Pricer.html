@@ -8,7 +8,7 @@
     .title { font-weight:bold; font-size:20px; background:black; color:white; padding:6px 10px; margin-bottom:15px; }
 
     .row { display:grid; grid-template-columns:180px 200px 120px; align-items:center; margin-bottom:6px; }
-    .row-wide { display:grid; grid-template-columns:180px repeat(5,110px); gap:6px; margin-bottom:6px; align-items:center; }
+    .row-wide { display:grid; grid-template-columns:180px repeat(8,110px); gap:6px; margin-bottom:6px; align-items:center; }
 
     input { width:100%; padding:3px 18px 3px 3px; box-sizing:border-box; background:#fff3b0; color:red; border:1px solid #aaa; text-align:right; }
 
@@ -37,6 +37,12 @@
 .cell::after { content:"m"; position:absolute; right:-16px; top:50%; transform:translateY(-50%); font-size:12px; }
     .output { background:#eee; padding:3px 18px 3px 3px; width:100%; display:inline-block; text-align:right; box-sizing:border-box; }
     .growth { font-style:italic; color:#bbb; width:100%; text-align:right; display:inline-block; }
+
+/* Light grey labels for calculation rows */
+.secondary-label, 
+.row-wide div i {
+  color:#bbb;
+}
 
     table { border-collapse: collapse; font-size:12px; }
     table td { border:1px solid #ddd; padding:3px 5px; text-align:right; }
@@ -73,10 +79,13 @@
   <div class="row-wide">
     <div></div>
     <input id="d0" value="01/12/2025">
-    <input id="d1" value="31/12/2026">
+    <input id="d1" value="30/06/2026">
     <input id="d2" value="30/06/2027">
     <input id="d3" value="30/06/2028">
-    <input id="d4" value="31/12/2028">
+    <input id="d4" value="30/06/2029">
+    <input id="d5" value="30/06/2030">
+    <input id="d6" value="30/06/2031">
+    <input id="d7" value="30/06/2032">
   </div>
 
   <div class="row-wide">
@@ -84,16 +93,22 @@
     <div class="cell"><input id="rev1" value="150"></div>
     <div class="cell"><input id="rev2" value="200"></div>
     <div class="cell"><input id="rev3" value="250"></div>
+    <div class="cell"><input id="rev4" value="250"></div>
+    <div class="cell"><input id="rev5" value="300"></div>
+    <div class="cell"><input id="rev6" value="350"></div>
     <div></div>
   </div>
 
   <div class="row-wide">
     <div><i>Revenue Growth %</i></div>
     <div></div>
-    <div></div>
+    <span class="growth"></span>
     <span id="g1" class="growth"></span>
     <span id="g2" class="growth"></span>
-    <div></div>
+    <span id="g3" class="growth"></span>
+    <span id="g4" class="growth"></span>
+    <span id="g5" class="growth"></span>
+    <span class="growth"></span>
   </div>
 
   <div class="row-wide">
@@ -101,6 +116,9 @@
     <div class="cell"><input id="e1" value="10"></div>
     <div class="cell"><input id="e2" value="30"></div>
     <div class="cell"><input id="e3" value="35"></div>
+    <div class="cell"><input id="e4" value="40"></div>
+    <div class="cell"><input id="e5" value="60"></div>
+    <div class="cell"><input id="e6" value="80"></div>
     <div></div>
   </div>
 
@@ -109,7 +127,10 @@
     <span id="m1" class="growth"></span>
     <span id="m2" class="growth"></span>
     <span id="m3" class="growth"></span>
-    <div></div>
+    <span id="m4" class="growth"></span>
+    <span id="m5" class="growth"></span>
+    <span id="m6" class="growth"></span>
+    <span class="growth"></span>
   </div>
 
   <div class="row-wide">
@@ -117,11 +138,15 @@
     <div class="cell"><input id="fcf1" value="5"></div>
     <div class="cell"><input id="fcf2" value="10"></div>
     <div class="cell"><input id="fcf3" value="15"></div>
+    <div class="cell"><input id="fcf4" value="15"></div>
+    <div class="cell"><input id="fcf5" value="30"></div>
+    <div class="cell"><input id="fcf6" value="50"></div>
     <div></div>
   </div>
 
   <div class="row-wide">
-    <div>Terminal Value</div><div></div><div></div><div></div><div></div>
+    <div>Terminal Value</div>
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
     <span id="tv_dcf" class="output cell"></span>
   </div>
 
@@ -132,6 +157,9 @@
     <span id="yf2" class="growth"></span>
     <span id="yf3" class="growth"></span>
     <span id="yf4" class="growth"></span>
+    <span id="yf5" class="growth"></span>
+    <span id="yf6" class="growth"></span>
+    <span id="yf7" class="growth"></span>
   </div>
 
   <div class="row-wide">
@@ -141,6 +169,9 @@
     <span id="df2" class="growth"></span>
     <span id="df3" class="growth"></span>
     <span id="df4" class="growth"></span>
+    <span id="df5" class="growth"></span>
+    <span id="df6" class="growth"></span>
+    <span id="df7" class="growth"></span>
   </div>
 
   <div class="row-wide">
@@ -150,6 +181,9 @@
     <span id="pv2" class="growth"></span>
     <span id="pv3" class="growth"></span>
     <span id="pv4" class="growth"></span>
+    <span id="pv5" class="growth"></span>
+    <span id="pv6" class="growth"></span>
+    <span id="pv7" class="growth"></span>
   </div>
 
   <div class="row"><div><b>Enterprise Value</b></div><span id="ev" class="output cell"></span></div>
@@ -219,29 +253,35 @@ function calc(){
 
   g1.innerText=((rev2.value/rev1.value-1)*100).toFixed(1)+"%";
   g2.innerText=((rev3.value/rev2.value-1)*100).toFixed(1)+"%";
+  g3.innerText=(rev3.value && rev4.value)?((rev4.value/rev3.value-1)*100).toFixed(1)+"%":"";
+  g4.innerText=(rev4.value && rev5.value)?((rev5.value/rev4.value-1)*100).toFixed(1)+"%":"";
+  g5.innerText=(rev5.value && rev6.value)?((rev6.value/rev5.value-1)*100).toFixed(1)+"%":"";
 
   m1.innerText=((e1.value/rev1.value)*100).toFixed(1)+"%";
   m2.innerText=((e2.value/rev2.value)*100).toFixed(1)+"%";
   m3.innerText=((e3.value/rev3.value)*100).toFixed(1)+"%";
+  m4.innerText=(e4.value && rev4.value)?((e4.value/rev4.value)*100).toFixed(1)+"%":"";
+  m5.innerText=(e5.value && rev5.value)?((e5.value/rev5.value)*100).toFixed(1)+"%":"";
+  m6.innerText=(e6.value && rev6.value)?((e6.value/rev6.value)*100).toFixed(1)+"%":"";
 
   function parseDate(s){ let [d,m,y]=s.split("/").map(Number); return new Date(y,m-1,d);} 
   function yf(a,b){return (b-a)/(1000*60*60*24*365);} 
 
-  let d0=parseDate(d0El.value), d1=parseDate(d1El.value), d2=parseDate(d2El.value), d3=parseDate(d3El.value), d4=parseDate(d4El.value);
+  let d0=parseDate(d0El.value), d1=parseDate(d1El.value), d2=parseDate(d2El.value), d3=parseDate(d3El.value), d4=parseDate(d4El.value), d5=parseDate(d5El.value), d6=parseDate(d6El.value), d7=parseDate(d7El.value);
 
-  let yf1v=yf(d0,d1), yf2v=yf(d0,d2), yf3v=yf(d0,d3), yf4v=yf(d0,d4);
+  let yf1v=yf(d0,d1), yf2v=yf(d0,d2), yf3v=yf(d0,d3), yf4v=yf(d0,d4), yf5v=yf(d0,d5), yf6v=yf(d0,d6), yf7v=yf(d0,d7);
 
-  yf1.innerText=yf1v.toFixed(2); yf2.innerText=yf2v.toFixed(2); yf3.innerText=yf3v.toFixed(2); yf4.innerText=yf4v.toFixed(2);
+  yf1.innerText=yf1v.toFixed(2); yf2.innerText=yf2v.toFixed(2); yf3.innerText=yf3v.toFixed(2); yf4.innerText=yf4v.toFixed(2); yf5.innerText=yf5v.toFixed(2); yf6.innerText=yf6v.toFixed(2); yf7.innerText=yf7v.toFixed(2);
 
-  let df1v=1/Math.pow(1+wacc,yf1v), df2v=1/Math.pow(1+wacc,yf2v), df3v=1/Math.pow(1+wacc,yf3v), df4v=1/Math.pow(1+wacc,yf4v);
+  let df1v=1/Math.pow(1+wacc,yf1v), df2v=1/Math.pow(1+wacc,yf2v), df3v=1/Math.pow(1+wacc,yf3v), df4v=1/Math.pow(1+wacc,yf4v), df5v=1/Math.pow(1+wacc,yf5v), df6v=1/Math.pow(1+wacc,yf6v), df7v=1/Math.pow(1+wacc,yf7v);
 
-  df1.innerText=df1v.toFixed(2); df2.innerText=df2v.toFixed(2); df3.innerText=df3v.toFixed(2); df4.innerText=df4v.toFixed(2);
+  df1.innerText=df1v.toFixed(2); df2.innerText=df2v.toFixed(2); df3.innerText=df3v.toFixed(2); df4.innerText=df4v.toFixed(2); df5.innerText=df5v.toFixed(2); df6.innerText=df6v.toFixed(2); df7.innerText=df7v.toFixed(2);
 
-  let pv1v=fcf1.value*df1v, pv2v=fcf2.value*df2v, pv3v=fcf3.value*df3v, pv4v=tv*df4v;
+  let pv1v=fcf1.value*df1v, pv2v=fcf2.value*df2v, pv3v=fcf3.value*df3v, pv4v=(fcf4.value||0)*df4v, pv5v=(fcf5.value||0)*df5v, pv6v=(fcf6.value||0)*df6v, pv7v=tv*df7v;
 
-  pv1.innerText=pv1v.toFixed(2); pv2.innerText=pv2v.toFixed(2); pv3.innerText=pv3v.toFixed(2); pv4.innerText=pv4v.toFixed(2);
+  pv1.innerText=pv1v.toFixed(2); pv2.innerText=pv2v.toFixed(2); pv3.innerText=pv3v.toFixed(2); pv4.innerText=pv4v?pv4v.toFixed(2):''; pv5.innerText=pv5v?pv5v.toFixed(2):''; pv6.innerText=pv6v?pv6v.toFixed(2):''; pv7.innerText=pv7v.toFixed(2);
 
-  let ev = pv1v+pv2v+pv3v+pv4v;
+  let ev = pv1v+pv2v+pv3v+pv4v+pv5v+pv6v+pv7v;
   evEl.innerText=ev.toFixed(2);
   ev_wf.innerText=ev.toFixed(2);
 
@@ -342,13 +382,30 @@ function calc(){
       let v = evMatrix[i][j];
       let blended = priceMatrix[i][j];
 
-      let isBase = (c===0 && m==multiple.value);
+      let baseMultiple = +multiple.value;
+      let isInteger = Number.isInteger(baseMultiple);
+
+      let isBase = (c===0 && m==baseMultiple);
 
       let colorEV = isBase ? 'black' : getColor(v,evMM.min,evMM.max);
       let colorPrice = isBase ? 'black' : getColor(blended,priceMM.min,priceMM.max);
 
-      rowEV += `<td style="background:${colorEV};color:${isBase?'white':'black'}">${v.toFixed(1)}</td>`;
-      rowPrice += `<td style="background:${colorPrice};color:${isBase?'white':'black'}">${blended.toFixed(1)}%</td>`;
+      // Border logic for non-integer multiple
+      let borderStyle = '';
+      if(!isInteger && c===0){
+        let low = Math.floor(baseMultiple);
+        let high = Math.ceil(baseMultiple);
+
+        if(m === low){
+          borderStyle = 'border-right:3px solid black;';
+        }
+        if(m === high){
+          borderStyle = 'border-left:3px solid black;';
+        }
+      }
+
+      rowEV += `<td style="background:${colorEV};color:${isBase?'white':'black'};${borderStyle}">${v.toFixed(1)}</td>`;
+      rowPrice += `<td style="background:${colorPrice};color:${isBase?'white':'black'};${borderStyle}">${blended.toFixed(1)}%</td>`;
     });
 
     rowEV += "</tr>";
@@ -373,7 +430,7 @@ function removeTranche(){
 }
 
 const wdEl=wd, kdEl=kd, keEl=ke, weEl=we, waccEl=wacc;
-const d0El=d0, d1El=d1, d2El=d2, d3El=d3, d4El=d4;
+const d0El=d0, d1El=d1, d2El=d2, d3El=d3, d4El=d4, d5El=d5, d6El=d6, d7El=d7;
 const ebitdaTVEl=ebitdaTV, multipleEl=multiple, tvEl=tv;
 const evEl=ev, adjEVEl=adjEV, wapEl=wap;
 
