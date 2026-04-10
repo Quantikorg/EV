@@ -171,9 +171,9 @@
   <div class="row"><div>Weighted Average Price</div><span id="wap" class="output"></span></div>
 </div>
 
-<!-- SENSITIVITY -->
+<!-- SENSITIVITY EV -->
 <div class="box">
-  <div class="title">SENSITIVITY ANALYSIS</div>
+  <div class="title">SENSITIVITY ANALYSIS - ENTERPRISE VALUE</div>
   <div style="overflow-x:auto;">
     <table>
       <thead>
@@ -188,21 +188,35 @@
   </div>
 </div>
 
+<!-- SENSITIVITY BLENDED PRICE -->
+<div class="box">
+  <div class="title">SENSITIVITY ANALYSIS - BLENDED PRICE</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><td></td><td colspan="15" style="text-align:center;">Exit Multiple</td></tr>
+        <tr>
+          <td>FCF Δ</td>
+          <td>1x</td><td>2x</td><td>3x</td><td>4x</td><td>5x</td><td>6x</td><td>7x</td><td>8x</td><td>9x</td><td>10x</td><td>11x</td><td>12x</td><td>13x</td><td>14x</td><td>15x</td>
+        </tr>
+      </thead>
+      <tbody id="sensTablePrice"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 function calc(){
-  // WACC
   let wd = wdEl.value/100;
   let we = 1-wd;
   weEl.innerText=(we*100).toFixed(1)+"%";
   let wacc = wd*(kdEl.value/100)+we*(keEl.value/100);
   waccEl.innerText=(wacc*100).toFixed(1)+"%";
 
-  // Terminal
   let tv = ebitdaTV.value * multiple.value;
   tvEl.innerText = tv.toFixed(1);
   document.getElementById("tv_dcf").innerText = tv.toFixed(1);
 
-  // Growth + margins
   g1.innerText=((rev2.value/rev1.value-1)*100).toFixed(1)+"%";
   g2.innerText=((rev3.value/rev2.value-1)*100).toFixed(1)+"%";
 
@@ -210,7 +224,6 @@ function calc(){
   m2.innerText=((e2.value/rev2.value)*100).toFixed(1)+"%";
   m3.innerText=((e3.value/rev3.value)*100).toFixed(1)+"%";
 
-  // EV + FULL DCF
   function parseDate(s){ let [d,m,y]=s.split("/").map(Number); return new Date(y,m-1,d);} 
   function yf(a,b){return (b-a)/(1000*60*60*24*365);} 
 
@@ -235,7 +248,6 @@ function calc(){
   let adjEV = ev + (+cashAdj.value);
   adjEVEl.innerText = adjEV.toFixed(2);
 
-  // WATERFALL
   let rows = document.querySelectorAll(".tranche");
   let amounts=[], total=0;
 
@@ -266,41 +278,84 @@ function calc(){
   wap = total ? wap/total : 0;
   wapEl.innerText = wap.toFixed(1)+"%";
 
-  // Sensitivity FULL
   let multiples = Array.from({length:15},(_,i)=>i+1);
   let changes = [-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4];
 
-  sensTable.innerHTML="";
+  let evMatrix = [];
+  let priceMatrix = [];
 
   changes.forEach(c=>{
-    let row = `<tr><td>${(c*100).toFixed(0)}%</td>`;
+    let evRow=[];
+    let priceRow=[];
 
     multiples.forEach(m=>{
       let v = ev*(1+c)*(m/multiple.value);
-      let n = (v - ev)/(ev||1);
+      let blended = wap * (v/(ev||1));
 
-      let t = Math.max(0,Math.min(1,(n+1)/2));
+      evRow.push(v);
+      priceRow.push(blended);
+    });
 
-      let r,g,b;
-      if(t<0.5){
-        let x=t/0.5;
-        r=230; g=Math.round(80+120*x); b=100;
-      } else {
-        let x=(t-0.5)/0.5;
-        r=Math.round(230-110*x); g=200; b=100;
-      }
+    evMatrix.push(evRow);
+    priceMatrix.push(priceRow);
+  });
+
+  function getMinMax(matrix){
+    let flat = matrix.flat();
+    return {min: Math.min(...flat), max: Math.max(...flat)};
+  }
+
+  function getColor(val,min,max){
+    let ratio = (val-min)/(max-min || 1);
+
+    let r, g, b = 120;
+
+    if(ratio < 0.5){
+      let t = ratio * 2;
+      r = 220;
+      g = Math.round(100 + 80*t);
+    } else {
+      let t = (ratio - 0.5) * 2;
+      r = Math.round(220 - 100*t);
+      g = 180;
+    }
+
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // Tests (non-breaking)
+  console.assert(getColor(0,0,100).startsWith("rgb"));
+  console.assert(getColor(50,0,100).startsWith("rgb"));
+  console.assert(getColor(100,0,100).startsWith("rgb"));
+
+  let evMM = getMinMax(evMatrix);
+  let priceMM = getMinMax(priceMatrix);
+
+  sensTable.innerHTML="";
+  sensTablePrice.innerHTML="";
+
+  changes.forEach((c,i)=>{
+    let rowEV = `<tr><td>${(c*100).toFixed(0)}%</td>`;
+    let rowPrice = `<tr><td>${(c*100).toFixed(0)}%</td>`;
+
+    multiples.forEach((m,j)=>{
+      let v = evMatrix[i][j];
+      let blended = priceMatrix[i][j];
 
       let isBase = (c===0 && m==multiple.value);
 
-      if(isBase){
-        row += `<td style="background:black;color:white">${v.toFixed(1)}</td>`;
-      } else {
-        row += `<td style="background:rgb(${r},${g},${b})">${v.toFixed(1)}</td>`;
-      }
+      let colorEV = isBase ? 'black' : getColor(v,evMM.min,evMM.max);
+      let colorPrice = isBase ? 'black' : getColor(blended,priceMM.min,priceMM.max);
+
+      rowEV += `<td style="background:${colorEV};color:${isBase?'white':'black'}">${v.toFixed(1)}</td>`;
+      rowPrice += `<td style="background:${colorPrice};color:${isBase?'white':'black'}">${blended.toFixed(1)}%</td>`;
     });
 
-    row += "</tr>";
-    sensTable.innerHTML += row;
+    rowEV += "</tr>";
+    rowPrice += "</tr>";
+
+    sensTable.innerHTML += rowEV;
+    sensTablePrice.innerHTML += rowPrice;
   });
 }
 
@@ -325,7 +380,7 @@ const evEl=ev, adjEVEl=adjEV, wapEl=wap;
 for(let i=0;i<3;i++) addTranche();
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
 calc();
-  </script>
+</script>
   <footer style="margin:40px auto 20px;max-width:920px;text-align:center;font-size:12px;color:#777;font-style:italic;">
     © Quantik.org. All rights reserved. This model, including its code and associated intellectual property, is the exclusive property of Quantik.org and may not be copied, distributed, or replicated without prior written consent. Use of this calculator implies acceptance of these terms.
   </footer>
